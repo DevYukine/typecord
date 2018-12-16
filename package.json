@@ -1,0 +1,33 @@
+{
+  "name": "typecord",
+  "version": "0.1.0",
+  "description": "Typescript library to interact with Discord API.",
+  "main": "dist/index.js",
+  "typings": "typings/index.d.ts",
+  "scripts": {
+    "prepare": "gulp build"
+  },
+  "repository": "git@github.com:Dev-Yukine/Typecord.git",
+  "author": "Yukine <devyukine@gmx.de>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^10.12.6",
+    "@types/pako": "^1.0.0",
+    "@types/superagent": "^3.8.5",
+    "@types/ws": "^6.0.1",
+    "fs-nextra": "^0.3.7",
+    "gulp": "^3.9.1",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-typescript": "^5.0.0",
+    "merge2": "^1.2.3",
+    "tslint": "^5.11.0",
+    "tslint-config-fire": "^1.0.1",
+    "typescript": "^3.2.1"
+  },
+  "dependencies": {
+    "collection": "discordjs/collection",
+    "pako": "^1.0.7",
+    "superagent": "^4.0.0",
+    "ws": "^6.1.2"
+  }
+}
