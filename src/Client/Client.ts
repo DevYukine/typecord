@@ -1,8 +1,14 @@
+import Collection from 'collection';
+import { EventEmitter } from 'events';
+import request from 'superagent';
+import Channel from '../Structures/Channel';
+import Guild from '../Structures/Guild';
+import User from '../Structures/User';
 import * as Constants from '../Util/Constants';
 import * as Util from '../Util/Util';
-import request from 'superagent';
 import WebSocketManager from './Websocket/WebsocketManager';
-import { EventEmitter } from 'events';
+import ClientUser from '../Structures/ClientUser';
+import PartialGuild from '../Structures/PartialGuild';
 
 export interface ClientOptions {
 	ws: {
@@ -34,9 +40,13 @@ export interface SessionObject {
 }
 
 export default class Client extends EventEmitter {
-	public ws: WebSocketManager = new WebSocketManager(this);
 	public token: string | null = null;
-	public options: ClientOptions;
+	public user: ClientUser | null = null;
+	public readonly options: ClientOptions;
+	public readonly ws: WebSocketManager = new WebSocketManager(this);
+	public readonly users = new Collection<string, User>();
+	public readonly guilds = new Collection<string, Guild | PartialGuild>();
+	public readonly channels = new Collection<string, Channel>();
 
 	constructor(options = {}) {
 		super();

@@ -7,7 +7,7 @@ export const DEFAULT_CLIENT_OPTIONS = {
 			$browser: 'typecord',
 			$device: 'typecord',
 		},
-		version: 6,
+		version: 7,
 	},
 	http: {
 		version: 7,

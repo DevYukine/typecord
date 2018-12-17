@@ -3,6 +3,44 @@ import WebSocketManager from './WebsocketManager';
 import { Inflate } from 'pako';
 import { stringify } from 'querystring';
 import { inspect } from 'util';
+import handle from './WebsocketHandler';
+
+export enum GatewayEvent {
+	CHANNEL_CREATE = 'CHANNEL_CREATE',
+	CHANNEL_DELETE = 'CHANNEL_DELETE',
+	CHANNEL_PINS_UPDATE = 'CHANNEL_PINS_UPDATE',
+	CHANNEL_UPDATE = 'CHANNEL_UPDATE',
+	GUILD_BAN_ADD = 'GUILD_BAN_ADD',
+	GUILD_BAN_REMOVE = 'GUILD_BAN_REMOVE',
+	GUILD_CREATE = 'GUILD_CREATE',
+	GUILD_DELETE = 'GUILD_DELETE',
+	GUILD_EMOJIS_UPDATE = 'GUILD_EMOJIS_UPDATE',
+	GUILD_INTEGRATIONS_UPDATE = 'GUILD_INTEGRATIONS_UPDATE',
+	GUILD_MEMBERS_CHUNK = 'GUILD_MEMBERS_CHUNK',
+	GUILD_MEMBER_ADD = 'GUILD_MEMBER_ADD',
+	GUILD_MEMBER_REMOVE = 'GUILD_MEMBER_REMOVE',
+	GUILD_MEMBER_UPDATE = 'GUILD_MEMBER_UPDATE',
+	GUILD_ROLE_CREATE = 'GUILD_ROLE_CREATE',
+	GUILD_ROLE_DELETE = 'GUILD_ROLE_DELETE',
+	GUILD_ROLE_UPDATE = 'GUILD_ROLE_UPDATE',
+	GUILD_SYNC = 'GUILD_SYNC',
+	GUILD_UPDATE = 'GUILD_UPDATE',
+	MESSAGE_CREATE = 'MESSAGE_CREATE',
+	MESSAGE_DELETE = 'MESSAGE_DELETE',
+	MESSAGE_DELETE_BULK = 'MESSAGE_DELETE_BULK',
+	MESSAGE_REACTION_ADD = 'MESSAGE_REACTION_ADD',
+	MESSAGE_REACTION_REMOVE = 'MESSAGE_REACTION_REMOVE',
+	MESSAGE_REACTION_REMOVE_ALL = 'MESSAGE_REACTION_REMOVE_ALL',
+	MESSAGE_UPDATE = 'MESSAGE_UPDATE',
+	PRESENCE_UPDATE = 'PRESENCE_UPDATE',
+	READY = 'READY',
+	RESUMED = 'RESUMED',
+	TYPING_START = 'TYPING_START',
+	USER_UPDATE = 'USER_UPDATE',
+	VOICE_SERVER_UPDATE = 'VOICE_SERVER_UPDATE',
+	VOICE_STATE_UPDATE = 'VOICE_STATE_UPDATE',
+	WEBHOOKS_UPDATE = 'WEBHOOKS_UPDATE'
+}
 
 export enum WebSocketStatus {
 	READY,
@@ -30,8 +68,11 @@ export enum GatewayOPCodes {
 export interface Payload {
 	op: number;
 	d: any;
-	s: number | null;
-	t: string | null;
+}
+
+export interface Dispatch extends Payload {
+	s: number;
+	t: GatewayEvent;
 }
 
 export default class WebSocketShard {
@@ -71,12 +112,10 @@ export default class WebSocketShard {
 
 	private _message(data: string) {
 		const packet: Payload = JSON.parse(data);
-		console.log(data);
-		const { op, d, s } = packet;
-		if (s && s > this._sequence) this._sequence = s;
+		const { op, d } = packet;
 		switch(op) {
 			case GatewayOPCodes.DISPATCH:
-				return this._packet(d);
+				return this._packet(packet as Dispatch);
 			case GatewayOPCodes.HELLO:
 				this._identify();
 				return this._heartbeat(d.heartbeat_interval);
@@ -89,8 +128,10 @@ export default class WebSocketShard {
 		}
 	}
 
-	private _packet(data: Payload) {
-		// this._debug(inspect(data));
+	private _packet(data: Dispatch) {
+		const { s } = data;
+		if (s > this._sequence) this._sequence = s;
+		return handle(this.manager.client, data);
 	}
 
 	private _error(error: Error) {

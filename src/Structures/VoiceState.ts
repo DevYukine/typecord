@@ -14,5 +14,5 @@ export interface VoiceStatePayload {
 }
 
 export default class VoiceState {
-
+	//
 }

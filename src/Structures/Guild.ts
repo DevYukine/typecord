@@ -1,11 +1,13 @@
-import Member, { GuildMemberPayload } from './Member';
+import Member from './Member';
 import Collection from 'collection';
 import Channel from './Channel';
-import Role, { RolePayload } from './Role';
-import VoiceState, { VoiceStatePayload } from './VoiceState';
+import Role from './Role';
+import VoiceState from './VoiceState';
 import Client from '../Client/Client';
-import Emoji, { EmojiPayload } from './Emoji';
-import { GuildPayload } from './UnavailableGuild';
+import Emoji from './Emoji';
+import PartialGuild from './PartialGuild';
+import WidgetInfo from './WidgetInfo';
+import { GuildCreatePayload } from '../Client/Websocket/handlers/GUILD_CREATE';
 
 export enum DefaultMessageNotifcationLevel {
 	ALL_MESSAGES,
@@ -29,37 +31,6 @@ export enum VerificationLevel {
 	MEDIUM,
 	HIGH,
 	VERY_HIGH
-}
-
-export interface GuildCreatePayload extends GuildPayload {
-	name: string;
-	icon?: string;
-	splash?: string;
-	owner?: boolean;
-	owner_id: string;
-	permissions?: number;
-	region: Region;
-	afk_channel_id?: string;
-	afk_timeout: number;
-	embed_enabled?: boolean;
-	embed_channel_id: string;
-	verification_level: VerificationLevel;
-	default_message_notifications: DefaultMessageNotifcationLevel;
-	explicit_content_filter: ExplicitContentFilterLevel;
-	roles: RolePayload[];
-	emojis: EmojiPayload[];
-	features: string[];
-	mfa_level: number;
-	application_id?: string;
-	widget_enabled?: boolean;
-	widget_channel_id?: string;
-	system_channel_id?: string;
-	joined_at?: Date;
-	large?: boolean;
-	member_count?: number;
-	voice_states: VoiceStatePayload[];
-	members: GuildMemberPayload[];
-	// TODO Finish this
 }
 
 export enum Region {
@@ -95,31 +66,66 @@ export enum Region {
 	VIP_US_WEST= 'vip-us-west'
 }
 
-export default class Guild {
-	public name?: string;
+export default class Guild extends PartialGuild {
+	public name: string;
 	public icon?: string;
-	public region?: Region;
+	public embed?: WidgetInfo;
+	public region: Region;
 	public splash?: string;
 	public ownerID: string;
+	public features: string[];
+	public mfaLevel: MFALevel;
+	public afkTimeout: number;
 	public memberCount?: number;
-	public unavailable: boolean;
-	public readonly id: string;
+	public afkChannelID?: string;
+	public applicationID?: string;
+	public verificationLevel: VerificationLevel;
+	public explicitContentFilter: ExplicitContentFilterLevel;
+	public defaultMessageNotification: DefaultMessageNotifcationLevel;
 	public readonly roles = new Collection<string, Role>();
 	public readonly emojis = new Collection<string, Emoji>();
 	public readonly members = new Collection<string, Member>();
 	public readonly channels = new Collection<string, Channel>();
 	public readonly voiceStates = new Collection<string, VoiceState>();
 
-	constructor(public client: Client, data: GuildCreatePayload) {
-		this.id = data.id;
-		this.unavailable = data.unavailable;
+	constructor(client: Client, data: GuildCreatePayload) {
+		super(client, data);
+		this.name = data.name;
+		this.icon = data.icon;
+		this.region = data.region;
+		this.splash = data.splash;
+		this.ownerID = data.owner_id;
+		this.features = data.features;
+		this.mfaLevel = data.mfa_level;
+		this.afkTimeout = data.afk_timeout;
+		this.memberCount = data.member_count;
+		this.afkChannelID = data.afk_channel_id;
+		this.applicationID = data.application_id;
+		this.verificationLevel = data.verification_level;
+		this.explicitContentFilter = data.explicit_content_filter;
+		this.defaultMessageNotification = data.default_message_notifications;
+		if (data.embed_channel_id || data.embed_enabled) this.embed = new WidgetInfo(this.client, data.embed_channel_id, data.embed_enabled);
+		for (const roleData of data.roles) {
+			const role = new Role(this.client, roleData);
+			this.roles.set(role.id, role);
+		}
+		for (const emojiData of data.emojis) {
+			const emoji = new Emoji(this.client, this.id, emojiData);
+			this.emojis.set(emoji.id, emoji);
+		}
+		if (data.members) {
+			for (const memberData of data.members) {
+				const member = new Member(this.client, memberData);
+				this.members.set(member.id, member);
+			}
+		}
 	}
 
 	public get owner() {
-		return this.members.get(this.ownerID);
+		return this.members.get(this.ownerID!);
 	}
 
-	private _patch() {
-
+	public get afkChannel() {
+		return this.channels.get(this.afkChannelID!);
 	}
 }

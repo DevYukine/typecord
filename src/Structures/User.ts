@@ -1,3 +1,5 @@
+import Client from '../Client/Client';
+
 export interface UserPayload {
 	id: string;
 	username: string;
@@ -13,5 +15,17 @@ export interface UserPayload {
 }
 
 export default class User {
+	public id: string;
+	public bot: boolean;
+	public avatar?: string;
+	public locale?: string;
+	public username: string;
+	public discriminator: string;
 
+	constructor(public client: Client, data: UserPayload) {
+		this.id = data.id;
+		this.bot = Boolean(data.bot);
+		this.discriminator = data.discriminator;
+		this.username = data.username;
+	}
 }
