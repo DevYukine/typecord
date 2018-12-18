@@ -111,7 +111,17 @@ export default class WebSocketShard {
 	}
 
 	private _message(data: string) {
-		const packet: Payload = JSON.parse(data);
+		let packet: Payload;
+		try {
+			packet = JSON.parse(data);
+		} catch (error) {
+			this.manager.client.emit('error', error);
+			return;
+		}
+		if (!packet) {
+			this._debug('Received null or broken packet');
+			return;
+		}
 		const { op, d } = packet;
 		switch(op) {
 			case GatewayOPCodes.DISPATCH:

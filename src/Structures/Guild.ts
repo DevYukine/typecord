@@ -7,7 +7,7 @@ import Client from '../Client/Client';
 import Emoji from './Emoji';
 import PartialGuild from './PartialGuild';
 import WidgetInfo from './WidgetInfo';
-import { GuildCreatePayload } from '../Client/Websocket/handlers/GUILD_CREATE';
+import { GuildCreatePayload } from '../Client/Websocket/handlers/GuildCreate';
 
 export enum DefaultMessageNotifcationLevel {
 	ALL_MESSAGES,
