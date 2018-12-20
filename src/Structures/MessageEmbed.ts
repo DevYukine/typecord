@@ -41,14 +41,14 @@ export default class MessageEmbed {
 
 	constructor(data?: MessageEmbedOptions) {
 		if (data) {
-			if (data.type) this.type = data.type;
-			if (data.title) this.title = data.title;
-			if (data.url) this.url = data.url;
-			if (data.color) this.color = data.color;
-			if (data.timestamp) this.timestamp = data.timestamp;
-			if (data.description) this.description = data.description;
-			if (data.fields) this.fields = data.fields;
-			if (data.thumbnail) this.thumbnail = data.thumbnail;
+			this.type = data.type;
+			this.title = data.title;
+			this.url = data.url;
+			this.color = data.color;
+			this.timestamp = data.timestamp;
+			this.description = data.description;
+			this.fields = data.fields;
+			this.thumbnail = data.thumbnail;
 		}
 	}
 }

@@ -9,6 +9,7 @@ import * as Util from '../Util/Util';
 import WebSocketManager from './Websocket/WebsocketManager';
 import ClientUser from '../Structures/ClientUser';
 import PartialGuild from '../Structures/PartialGuild';
+import DataStore from '../Structures/DataStore';
 
 export interface ClientOptions {
 	ws: {
@@ -44,9 +45,9 @@ export default class Client extends EventEmitter {
 	public user: ClientUser | null = null;
 	public readonly options: ClientOptions;
 	public readonly ws: WebSocketManager = new WebSocketManager(this);
-	public readonly users = new Collection<string, User>();
-	public readonly guilds = new Collection<string, Guild | PartialGuild>();
-	public readonly channels = new Collection<string, Channel>();
+	public readonly users = new DataStore<User>(this, User);
+	public readonly guilds = new DataStore<Guild | PartialGuild>(this, Guild);
+	public readonly channels = new DataStore<Channel>(this, Channel);
 
 	constructor(options = {}) {
 		super();

@@ -1,27 +1,17 @@
-import Channel, { ChannelPayload } from './Channel';
-import Guild from './Guild';
+import { ChannelPayload } from './Channel';
 import Client from '../Client/Client';
+import GuildChannel from './GuildChannel';
 
-export default class TextChannel extends Channel {
-	public name: string;
+export default class TextChannel extends GuildChannel {
 	public nsfw: boolean;
 	public topic?: string;
-	public position: number;
 	public rateLimitPerUser: number;
-	public readonly guildID: string;
 
 	constructor(client: Client, data: ChannelPayload) {
 		super(client, data);
-		this.name = data.name!;
 		this.nsfw = data.nsfw;
 		this.topic = data.topic;
-		this.guildID = data.guild_id!;
-		this.position = data.position!;
 		this.rateLimitPerUser = data.rate_limit_per_user!;
-	}
-
-	public get guild() {
-		return this.client.guilds.get(this.guildID);
 	}
 
 	public send(content: string | string[]) {

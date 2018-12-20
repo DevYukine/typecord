@@ -12,7 +12,7 @@ export interface GuildMemberPayload {
 	mute: boolean;
 }
 
-export default class Member {
+export default class GuildMember {
 	public nick?: string;
 	public readonly id: string;
 	public readonly roles = new Collection<string, Role>();

@@ -1,6 +1,4 @@
-import Member from './Member';
-import Collection from 'collection';
-import Channel from './Channel';
+import Member from './GuildMember';
 import Role from './Role';
 import VoiceState from './VoiceState';
 import Client from '../Client/Client';
@@ -8,6 +6,8 @@ import Emoji from './Emoji';
 import PartialGuild from './PartialGuild';
 import WidgetInfo from './WidgetInfo';
 import { GuildCreatePayload } from '../Client/Websocket/handlers/GuildCreate';
+import DataStore from './DataStore';
+import GuildChannel from './GuildChannel';
 
 export enum DefaultMessageNotifcationLevel {
 	ALL_MESSAGES,
@@ -82,11 +82,11 @@ export default class Guild extends PartialGuild {
 	public verificationLevel: VerificationLevel;
 	public explicitContentFilter: ExplicitContentFilterLevel;
 	public defaultMessageNotification: DefaultMessageNotifcationLevel;
-	public readonly roles = new Collection<string, Role>();
-	public readonly emojis = new Collection<string, Emoji>();
-	public readonly members = new Collection<string, Member>();
-	public readonly channels = new Collection<string, Channel>();
-	public readonly voiceStates = new Collection<string, VoiceState>();
+	public readonly roles = new DataStore<Role>(this.client, Role);
+	public readonly emojis = new DataStore<Emoji>(this.client, Emoji);
+	public readonly members = new DataStore<Member>(this.client, Member);
+	public readonly channels = new DataStore<GuildChannel>(this.client, GuildChannel);
+	public readonly voiceStates = new DataStore<VoiceState>(this.client, VoiceState);
 
 	constructor(client: Client, data: GuildCreatePayload) {
 		super(client, data);
@@ -107,16 +107,22 @@ export default class Guild extends PartialGuild {
 		if (data.embed_channel_id || data.embed_enabled) this.embed = new WidgetInfo(this.client, data.embed_channel_id, data.embed_enabled);
 		for (const roleData of data.roles) {
 			const role = new Role(this.client, roleData);
-			this.roles.set(role.id, role);
+			this.roles.add(role);
 		}
 		for (const emojiData of data.emojis) {
 			const emoji = new Emoji(this.client, this.id, emojiData);
-			this.emojis.set(emoji.id, emoji);
+			this.emojis.add(emoji);
 		}
 		if (data.members) {
 			for (const memberData of data.members) {
 				const member = new Member(this.client, memberData);
-				this.members.set(member.id, member);
+				this.members.add(member);
+			}
+		}
+		if (data.voice_states) {
+			for (const voiceStateData of data.voice_states) {
+				const voiceState = new VoiceState(this.client, voiceStateData);
+				this.voiceStates.add(voiceState);
 			}
 		}
 	}

@@ -1,5 +1,5 @@
-import Channel from './Channel';
+import GuildChannel from './GuildChannel';
 
-export default class CategoryChannel extends Channel {
+export default class CategoryChannel extends GuildChannel {
 
 }
