@@ -5,25 +5,25 @@ import Client from '../Client/Client';
 import Guild from './Guild';
 
 export interface EmojiPayload {
-	id: string;
+	id: string | null;
 	name: string;
 	roles?: string[];
 	user?: UserPayload;
 	require_colons?: boolean;
-	managed: boolean;
-	animated: boolean;
+	managed?: boolean;
+	animated?: boolean;
 }
 
 export default class Emoji {
 	public name: string;
 	public requireColons?: boolean;
 	public roles = new Collection<string, Role>();
-	public readonly id: string;
+	public readonly id: string | null;
 	public readonly userID?: string;
-	public readonly managed: boolean;
-	public readonly animated: boolean;
+	public readonly managed?: boolean;
+	public readonly animated?: boolean;
 
-	constructor(public client: Client, public guildID: string, data: EmojiPayload) {
+	constructor(public client: Client, data: EmojiPayload, public guildID: string) {
 		this.id = data.id;
 		this.name = data.name;
 		this.managed = data.managed;

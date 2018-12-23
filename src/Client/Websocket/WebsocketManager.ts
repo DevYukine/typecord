@@ -1,6 +1,7 @@
 import Client from '../Client';
 import Collection from 'collection';
 import WebSocketShard from './WebsocketShard';
+import * as Util from '../../Util/Util';
 
 export default class WebSocketManager {
 	public gateway: string | null = null;
@@ -12,7 +13,8 @@ export default class WebSocketManager {
 
 	public async init() {
 		for (const shard of this.shards.values()) {
-			shard.connect();
+			await shard.connect();
+			await Util.wait(5000);
 		}
 	}
 }

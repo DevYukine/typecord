@@ -1,3 +1,5 @@
+import { promisify } from 'util';
+
 export const has = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
 
 export function mergeDefault<T>(def: any, given: any): T {
@@ -11,4 +13,8 @@ export function mergeDefault<T>(def: any, given: any): T {
 	}
 
 	return given;
+}
+
+export function wait(time: number) {
+	return promisify(setTimeout)(time);
 }

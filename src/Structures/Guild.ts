@@ -1,13 +1,18 @@
-import Member from './GuildMember';
-import Role from './Role';
-import VoiceState from './VoiceState';
 import Client from '../Client/Client';
-import Emoji from './Emoji';
-import PartialGuild from './PartialGuild';
-import WidgetInfo from './WidgetInfo';
 import { GuildCreatePayload } from '../Client/Websocket/handlers/GuildCreate';
 import DataStore from './DataStore';
+import Emoji, { EmojiPayload } from './Emoji';
 import GuildChannel from './GuildChannel';
+import Member, { GuildMemberPayload } from './GuildMember';
+import PartialGuild from './PartialGuild';
+import Role, { RolePayload } from './Role';
+import VoiceState, { VoiceStatePayload } from './VoiceState';
+import WidgetInfo from './WidgetInfo';
+import GuildMember from './GuildMember';
+import { ChannelPayload, ChannelType } from './Channel';
+import TextChannel from './TextChannel';
+import VoiceChannel from './VoiceChannel';
+import CategoryChannel from './CategoryChannel';
 
 export enum DefaultMessageNotifcationLevel {
 	ALL_MESSAGES,
@@ -82,11 +87,11 @@ export default class Guild extends PartialGuild {
 	public verificationLevel: VerificationLevel;
 	public explicitContentFilter: ExplicitContentFilterLevel;
 	public defaultMessageNotification: DefaultMessageNotifcationLevel;
-	public readonly roles = new DataStore<Role>(this.client, Role);
-	public readonly emojis = new DataStore<Emoji>(this.client, Emoji);
-	public readonly members = new DataStore<Member>(this.client, Member);
-	public readonly channels = new DataStore<GuildChannel>(this.client, GuildChannel);
-	public readonly voiceStates = new DataStore<VoiceState>(this.client, VoiceState);
+	public readonly roles = new DataStore<Role, RolePayload>(this.client, Role);
+	public readonly emojis = new DataStore<Emoji, EmojiPayload>(this.client, Emoji);
+	public readonly members = new DataStore<GuildMember, GuildMemberPayload>(this.client, Member);
+	public readonly channels = new DataStore<GuildChannel, ChannelPayload>(this.client, GuildChannel);
+	public readonly voiceStates = new DataStore<VoiceState, VoiceStatePayload>(this.client, VoiceState);
 
 	constructor(client: Client, data: GuildCreatePayload) {
 		super(client, data);
@@ -106,23 +111,38 @@ export default class Guild extends PartialGuild {
 		this.defaultMessageNotification = data.default_message_notifications;
 		if (data.embed_channel_id || data.embed_enabled) this.embed = new WidgetInfo(this.client, data.embed_channel_id, data.embed_enabled);
 		for (const roleData of data.roles) {
-			const role = new Role(this.client, roleData);
-			this.roles.add(role);
+			this.roles.add(roleData);
 		}
 		for (const emojiData of data.emojis) {
-			const emoji = new Emoji(this.client, this.id, emojiData);
-			this.emojis.add(emoji);
+			this.emojis.add(emojiData);
+		}
+		if (data.channels) {
+			for (const channelData of data.channels) {
+				let channel: GuildChannel;
+				switch (channelData.type) {
+					case ChannelType.TEXT:
+						channel = new TextChannel(this.client, channelData);
+						break;
+					case ChannelType.VOICE:
+						channel = new VoiceChannel(this.client, channelData);
+						break;
+					case ChannelType.CATEGORY:
+						channel = new CategoryChannel(this.client, channelData);
+						break;
+					default:
+						continue;
+				}
+				this.channels.add(channel);
+			}
 		}
 		if (data.members) {
 			for (const memberData of data.members) {
-				const member = new Member(this.client, memberData);
-				this.members.add(member);
+				this.members.add(memberData);
 			}
 		}
 		if (data.voice_states) {
 			for (const voiceStateData of data.voice_states) {
-				const voiceState = new VoiceState(this.client, voiceStateData);
-				this.voiceStates.add(voiceState);
+				this.voiceStates.add(voiceStateData);
 			}
 		}
 	}

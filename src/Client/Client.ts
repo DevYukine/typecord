@@ -1,15 +1,17 @@
 import Collection from 'collection';
 import { EventEmitter } from 'events';
-import request from 'superagent';
-import Channel from '../Structures/Channel';
-import Guild from '../Structures/Guild';
-import User from '../Structures/User';
-import * as Constants from '../Util/Constants';
-import * as Util from '../Util/Util';
-import WebSocketManager from './Websocket/WebsocketManager';
+import RestManager from '../Rest/RestManager';
+import { DiscordAPIMethod } from '../Rest/RestRequest';
 import ClientUser from '../Structures/ClientUser';
-import PartialGuild from '../Structures/PartialGuild';
 import DataStore from '../Structures/DataStore';
+import Guild from '../Structures/Guild';
+import GuildChannel from '../Structures/GuildChannel';
+import PartialGuild, { PartialGuildPayload } from '../Structures/PartialGuild';
+import User, { UserPayload } from '../Structures/User';
+import { DEFAULT_CLIENT_OPTIONS, ENDPOINTS } from '../Util/Constants';
+import * as Util from '../Util/Util';
+import { GuildCreatePayload } from './Websocket/handlers/GuildCreate';
+import WebSocketManager from './Websocket/WebsocketManager';
 
 export interface ClientOptions {
 	ws: {
@@ -27,6 +29,7 @@ export interface ClientOptions {
 		api: string,
 		cdn: string,
 		invite: string,
+		userAgent: string
 	};
 }
 
@@ -44,28 +47,33 @@ export default class Client extends EventEmitter {
 	public token: string | null = null;
 	public user: ClientUser | null = null;
 	public readonly options: ClientOptions;
-	public readonly ws: WebSocketManager = new WebSocketManager(this);
-	public readonly users = new DataStore<User>(this, User);
-	public readonly guilds = new DataStore<Guild | PartialGuild>(this, Guild);
-	public readonly channels = new DataStore<Channel>(this, Channel);
+	public readonly ws = new WebSocketManager(this);
+	public readonly rest = new RestManager(this);
+	public readonly users = new DataStore<User, UserPayload>(this, User);
+	public readonly guilds = new DataStore<Guild | PartialGuild, PartialGuildPayload | GuildCreatePayload>(this, Guild);
 
 	constructor(options = {}) {
 		super();
-		this.options = Util.mergeDefault<ClientOptions>(options, Constants.DEFAULT_CLIENT_OPTIONS);
+		this.options = Util.mergeDefault<ClientOptions>(options, DEFAULT_CLIENT_OPTIONS);
+	}
+
+	public get channels() {
+		const channels: [string, GuildChannel][] = [];
+		for (const guild of this.guilds.values()) {
+			if (guild instanceof Guild) channels.push(...guild.channels);
+		}
+		return new Collection<string, GuildChannel>(channels);
 	}
 
 	public async login(token: string) {
-		console.log(`Authenticating using token ${token}`);
+		this.emit('debug', `Authenticating using token ${token}`);
 		this.token = token.replace(/^(Bot|Bearer)\s*/i, '');
-		const { url } = await this.fetchGateway();
+		const { url } = await this._fetchGateway();
 		this.ws.gateway = url;
 		return this.ws.init();
 	}
 
-	private async fetchGateway(): Promise<SessionObject> {
-		const { body } = await request
-			.get(`${this.options.http.api}/v${this.options.http.version}/gateway/bot`)
-			.set({ Authorization: `Bot ${this.token}`});
-		return body;
+	private async _fetchGateway(): Promise<SessionObject> {
+		return this.rest.enqueue(DiscordAPIMethod.GET, ENDPOINTS.GATEWAY_BOT);
 	}
 }

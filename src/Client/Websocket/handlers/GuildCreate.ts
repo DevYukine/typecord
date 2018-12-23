@@ -3,7 +3,7 @@ import { ChannelPayload } from '../../../Structures/Channel';
 import { EmojiPayload } from '../../../Structures/Emoji';
 import Guild, { DefaultMessageNotifcationLevel, ExplicitContentFilterLevel, VerificationLevel } from '../../../Structures/Guild';
 import { GuildMemberPayload } from '../../../Structures/GuildMember';
-import { PartialGuildPayload } from '../../../Structures/PartialGuild';
+import PartialGuild, { PartialGuildPayload } from '../../../Structures/PartialGuild';
 import { PresencePayload } from '../../../Structures/Presence';
 import { RolePayload } from '../../../Structures/Role';
 import { VoiceStatePayload } from '../../../Structures/VoiceState';
@@ -44,10 +44,9 @@ export interface GuildCreatePayload extends PartialGuildPayload {
 export default function(client: Client, data: GuildCreatePayload) {
 	const cache = client.guilds.get(data.id);
 	if (cache) {
-		if (cache.unavailable && !data.unavailable) {
-			const guild = new Guild(client, data);
-			client.guilds.set(guild.id, guild);
-		}
+		if (!cache.unavailable && data.unavailable && !(cache instanceof PartialGuild)) return;
+		const guild = new Guild(client, data);
+		client.guilds.set(guild.id, guild);
 		return;
 	}
 	const guild = new Guild(client, data);

@@ -1,7 +1,7 @@
 import Collection from 'collection';
-import { UserPayload } from './User';
 import Client from '../Client/Client';
 import Role from './Role';
+import { UserPayload } from './User';
 
 export interface GuildMemberPayload {
 	user: UserPayload;

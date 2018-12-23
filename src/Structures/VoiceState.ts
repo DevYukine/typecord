@@ -1,6 +1,6 @@
-import { GuildMemberPayload } from './GuildMember';
-import Guild from './Guild';
 import Client from '../Client/Client';
+import Guild from './Guild';
+import { GuildMemberPayload } from './GuildMember';
 
 export interface VoiceStatePayload {
 	guild_id?: string;

@@ -1,4 +1,4 @@
-export interface MessageEmbedOptions {
+export interface MessageEmbedPayload {
 	type?: MessageEmbedType;
 	title?: string;
 	description?: string;
@@ -39,7 +39,7 @@ export default class MessageEmbed {
 	public fields?: MessageEmbedField[];
 	public thumbnail?: MessageEmbedThumbnail;
 
-	constructor(data?: MessageEmbedOptions) {
+	constructor(data?: MessageEmbedPayload) {
 		if (data) {
 			this.type = data.type;
 			this.title = data.title;

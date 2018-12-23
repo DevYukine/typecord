@@ -2,16 +2,17 @@ import Collection from 'collection';
 import Client from '../Client/Client';
 
 export interface DataStoreValue {
-	id: string;
+	id?: string | null;
 }
 
 export interface DataStoreAddOptions {
+	constructorArgs?: Iterable<any>;
 	cache?: boolean;
 	id?: string;
 }
 
-export default class DataStore<V extends DataStoreValue> extends Collection<string, V> {
-	constructor(public client: Client, public type: new (...args: any[]) => V, public iterable?: Iterable<V>) {
+export default class DataStore<V extends DataStoreValue, T> extends Collection<string, V> {
+	constructor(public client: Client, public type: new (...args: any[]) => V, public iterable?: Iterable<T>) {
 		super();
 		if (iterable) for (const item of iterable) this.add(item);
 	}
@@ -21,12 +22,22 @@ export default class DataStore<V extends DataStoreValue> extends Collection<stri
 		return super.get(key);
 	}
 
-	public add(data: V, options: DataStoreAddOptions = {}): V {
-		const cached = this.get(data.id || options.id);
+	public add(data: T | V, options: DataStoreAddOptions = { cache: true }): V {
+		const cached = this.get((data as any).id || options.id);
 		if (cached) return cached;
 
-		const entry = new this.type();
-		if (options.cache) this.set(data.id || entry.id, entry);
+		if (data instanceof this.type) {
+			this.set(data.id!, data);
+			return data;
+		}
+
+		const constructorArguments = options.constructorArgs || [];
+
+		const entry = new this.type(this.client, data, ...constructorArguments);
+		if (options.cache) {
+			const id = (data as any).id || entry.id || options.id;
+			this.set(id!, entry);
+		}
 		return entry;
 	}
 

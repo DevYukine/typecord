@@ -1,9 +1,10 @@
-import Websocket from 'ws';
-import WebSocketManager from './WebsocketManager';
+import { EventEmitter } from 'events';
 import { Inflate } from 'pako';
 import { stringify } from 'querystring';
 import { inspect } from 'util';
+import Websocket from 'ws';
 import handle from './WebsocketHandler';
+import WebSocketManager from './WebsocketManager';
 
 export enum GatewayEvent {
 	CHANNEL_CREATE = 'CHANNEL_CREATE',
@@ -75,7 +76,15 @@ export interface Dispatch extends Payload {
 	t: GatewayEvent;
 }
 
-export default class WebSocketShard {
+export interface RatelimitObject {
+	queue: object[];
+	total: number;
+	remaining: number;
+	time: number;
+	timer: NodeJS.Timer | null;
+}
+
+export default class WebSocketShard extends EventEmitter {
 	public status = WebSocketStatus.IDLE;
 
 	private _ws: Websocket | null = null;
@@ -85,9 +94,22 @@ export default class WebSocketShard {
 	private _zlib = new Inflate({ to: 'string' });
 	private _sequence = -1;
 	private _lastPing = -1;
+	private _ratelimit: RatelimitObject = {
+		queue: [],
+		total: 120,
+		remaining: 120,
+		time: 6e4,
+		timer: null
+	};
 
 	constructor(public manager: WebSocketManager, public id: number, oldSequence?: number) {
+		super();
 		if (oldSequence) this._sequence = oldSequence;
+	}
+
+	public get ping() {
+		const sum = this._pings.reduce((a, b) => a + b, 0);
+		return sum / this._pings.length;
 	}
 
 	public connect() {
@@ -99,11 +121,10 @@ export default class WebSocketShard {
 		this._ws.on('message', this._message.bind(this));
 		this._ws.on('error', this._error.bind(this));
 		this._ws.on('close', this._close.bind(this));
-	}
-
-	public get ping() {
-		const sum = this._pings.reduce((a, b) => a + b, 0);
-		return sum / this._pings.length;
+		return new Promise((resolve, reject) => {
+			this.once('ready', resolve);
+			setTimeout(() => reject(new Error(`Shard ${this.id} didn't get ready in time`)), 6e4);
+		});
 	}
 
 	private _open() {
@@ -139,8 +160,9 @@ export default class WebSocketShard {
 	}
 
 	private _packet(data: Dispatch) {
-		const { s } = data;
+		const { s, t } = data;
 		if (s > this._sequence) this._sequence = s;
+		if (t === GatewayEvent.READY) this.emit('ready');
 		return handle(this.manager.client, data);
 	}
 
@@ -152,13 +174,30 @@ export default class WebSocketShard {
 		this._debug(inspect(event));
 	}
 
-	private _send(data: object): Promise<void> {
-		return new Promise((resolve, reject) => {
-			this._ws!.send(JSON.stringify(data), err => {
-				if (err) return reject(err);
-				resolve();
-			});
-		});
+	private _send(data: object) {
+		this._ws!.send(JSON.stringify(data), err => { if (err) this.manager.client.emit('error', err); });
+	}
+
+	private _enqueueRequest(data: object) {
+		this._ratelimit.queue.push(data);
+		this._processQueue();
+	}
+
+	private _processQueue() {
+		if (this._ratelimit.remaining === 0) return;
+		if (this._ratelimit.queue.length === 0) return;
+		if (this._ratelimit.remaining === this._ratelimit.total) {
+			this._ratelimit.timer = setTimeout(() => {
+				this._ratelimit.remaining = this._ratelimit.total;
+				this._processQueue();
+			}, this._ratelimit.time);
+		}
+		while (this._ratelimit.remaining > 0) {
+			const item = this._ratelimit.queue.shift();
+			if (!item) return;
+			this._send(item);
+			this._ratelimit.remaining--;
+		}
 	}
 
 	private _ackHeartbeat() {
@@ -182,7 +221,7 @@ export default class WebSocketShard {
 
 		this._debug('Sending a heartbeat');
 		this._lastPing = Date.now();
-		this._send({
+		this._enqueueRequest({
 			op: GatewayOPCodes.HEARTBEAT,
 			d: this._sequence,
 		});
@@ -192,10 +231,10 @@ export default class WebSocketShard {
 		const d = { token: this.manager.client.token, ...this.manager.client.options.ws };
 
 		this._debug('Identifying as a new session');
-		this._send({ op: GatewayOPCodes.IDENTIFY, d });
+		this._enqueueRequest({ op: GatewayOPCodes.IDENTIFY, d });
 	}
 
 	private _debug(message: string) {
-		return console.log(`[Shard ${this.id}] ${message}`);
+		return this.manager.client.emit('debug', `[Shard ${this.id}] ${message}`);
 	}
 }

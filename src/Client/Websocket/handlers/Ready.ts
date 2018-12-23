@@ -21,5 +21,4 @@ export default function(client: Client, data: ReadyPayload) {
 		const instance = new PartialGuild(client, guildData);
 		client.guilds.set(guildData.id, instance);
 	}
-	console.log(client);
 }
