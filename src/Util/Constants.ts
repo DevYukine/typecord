@@ -15,7 +15,10 @@ export const DEFAULT_CLIENT_OPTIONS = {
 		cdn: 'https://cdn.discordapp.com',
 		invite: 'https://discord.gg',
 		userAgent: 'typecord'
-	}
+	},
+	shardCount: 1,
+	shards: [],
+	totalShardCount: 1
 };
 
 export const ENDPOINTS = {

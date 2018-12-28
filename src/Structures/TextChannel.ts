@@ -1,3 +1,4 @@
+import { URL } from 'url';
 import Client from '../Client/Client';
 import { DiscordAPIMethod } from '../Rest/RestRequest';
 import { ENDPOINTS } from '../Util/Constants';
@@ -6,6 +7,15 @@ import DataStore from './DataStore';
 import GuildChannel from './GuildChannel';
 import TextBasedChannel from './Interfaces/TextBasedChannel';
 import Message, { MessagePayload } from './Message';
+import MessageEmbed from './MessageEmbed';
+
+export type BufferResolvable = Buffer | URL;
+
+export default interface MessageOptions {
+	tts: boolean;
+	embed: MessageEmbed;
+	files: BufferResolvable[];
+}
 
 export default class TextChannel extends GuildChannel implements TextBasedChannel {
 	public nsfw: boolean;
@@ -28,11 +38,11 @@ export default class TextChannel extends GuildChannel implements TextBasedChanne
 	}
 
 	public get lastPinAt() {
-		return this.lastPinTimestamp ? new Date(this.lastPinTimestamp) : null;
+		return this.lastPinTimestamp ? new Date(this.lastPinTimestamp) : undefined;
 	}
 
-	public send(content: string | string[]) {
+	public send(content: string | string[] | MessageEmbed, options?: MessageOptions): Promise<Message> {
 		const contentString = Array.isArray(content) ? content.join('\n') : content;
-		return this.client.rest.enqueue(DiscordAPIMethod.POST, ENDPOINTS.CHANNEL_MESSAGES(this.id) , { data: { contentString } });
+		return this.client.rest.enqueue(DiscordAPIMethod.POST, ENDPOINTS.CHANNEL_MESSAGES(this.id) , { data: { content: contentString } });
 	}
 }

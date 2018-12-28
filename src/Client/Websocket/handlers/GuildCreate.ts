@@ -7,7 +7,7 @@ import PartialGuild, { PartialGuildPayload } from '../../../Structures/PartialGu
 import { PresencePayload } from '../../../Structures/Presence';
 import { RolePayload } from '../../../Structures/Role';
 import { VoiceStatePayload } from '../../../Structures/VoiceState';
-import Client from '../../Client';
+import WebSocketShard from '../WebsocketShard';
 
 export interface GuildCreatePayload extends PartialGuildPayload {
 	name: string;
@@ -41,14 +41,14 @@ export interface GuildCreatePayload extends PartialGuildPayload {
 	presences?: PresencePayload[];
 }
 
-export default function(client: Client, data: GuildCreatePayload) {
-	const cache = client.guilds.get(data.id);
+export default function(shard: WebSocketShard, data: GuildCreatePayload) {
+	const cache = shard.client.guilds.get(data.id);
 	if (cache) {
 		if (!cache.unavailable && data.unavailable && !(cache instanceof PartialGuild)) return;
-		const guild = new Guild(client, data);
-		client.guilds.set(guild.id, guild);
+		const guild = new Guild(shard.client, data);
+		shard.client.guilds.set(guild.id, guild);
 		return;
 	}
-	const guild = new Guild(client, data);
-	client.guilds.add(guild);
+	const guild = new Guild(shard.client, data);
+	shard.client.guilds.add(guild);
 }
